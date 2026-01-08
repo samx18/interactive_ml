@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Linear Regression: Interactive House Price Predictor</title>
+    <style>
+        :root{
+            --bg:#0b1220;
+            --panel:#101a2f;
+            --text:#e7eefc;
+            --muted:#a8b3cc;
+            --accent:#76a7ff;
+            --red:#ff5a7a;
+            --blue:#4cc9ff;
+            --yellow:#ffd166;
+            --good:#2dd4bf;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+            background: radial-gradient(1200px 600px at 15% 20%, #142246 0%, var(--bg) 60%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: linear-gradient(180deg, rgba(16,26,47,0.95), rgba(16,26,47,0.75));
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+            overflow: hidden;
+            padding: 30px;
+        }
+        h1 {
+            color: var(--text);
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.35;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        @media (max-width: 980px){
+            .main-content{grid-template-columns: 1fr}
+        }
+        .visualization-panel {
+            order: 2;
+        }
+        .control-panel {
+            order: 1;
+            background: linear-gradient(180deg, rgba(16,26,47,0.95), rgba(16,26,47,0.75));
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+            overflow: hidden;
+            padding: 14px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+            background: rgba(0,0,0,0.18);
+            border-radius: 12px;
+            cursor: crosshair;
+        }
+        .canvas-wrap {
+            position: relative;
+        }
+        .control-group {
+            margin-bottom: 14px;
+        }
+        .section-title {
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #cfe0ff;
+            opacity: 0.9;
+            margin: 0 0 10px;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.35);
+        }
+        .dot.blue { background: var(--blue); }
+        .dot.line { background: var(--accent); }
+        .instructions {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px dashed rgba(255,255,255,0.18);
+            background: rgba(0,0,0,0.18);
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+            margin-bottom: 14px;
+        }
+        .instructions h4 {
+            color: var(--text);
+            margin: 0 0 8px;
+            font-size: 13px;
+        }
+        .stats {
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.12);
+            border-radius: 12px;
+            padding: 10px;
+            margin-top: 14px;
+        }
+        .stats-title {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .stats-value {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--text);
+        }
+        button, .pill {
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            padding: 9px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+            transition: transform 0.04s ease, background 0.2s ease, border 0.2s ease;
+            user-select: none;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.10);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        button.primary {
+            background: linear-gradient(180deg, rgba(118,167,255,0.35), rgba(118,167,255,0.15));
+            border-color: rgba(118,167,255,0.45);
+        }
+        button.good {
+            background: linear-gradient(180deg, rgba(45,212,191,0.25), rgba(45,212,191,0.10));
+            border-color: rgba(45,212,191,0.35);
+        }
+        .axis-labels {
+            text-align: center;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .step-indicator {
+            border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(0,0,0,0.20);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: var(--muted);
+            backdrop-filter: blur(6px);
+            margin-top: 12px;
+        }
+        .toggle {
+            display: flex;
+            gap: 8px;
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(0,0,0,0.15);
+            margin-bottom: 14px;
+        }
+        .toggle .pill {
+            padding: 8px 10px;
+            border-radius: 12px;
+            border-color: transparent;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 800;
+            font-size: 12px;
+            margin: 0;
+        }
+        .toggle .pill.active {
+            color: var(--text);
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.10);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .intuition-content {
+            line-height: 1.6;
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .intuition-content h4 {
+            color: var(--text);
+            margin-top: 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        .intuition-content ul, .intuition-content p {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .intuition-content strong {
+            color: var(--text);
+        }
+        .intuition-content li {
+            margin-bottom: 4px;
+        }
+        .analogy-box {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px dashed rgba(76,201,255,0.3);
+            background: rgba(76,201,255,0.08);
+            color: var(--blue);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 10px 0;
+        }
+        .analogy-box h5 {
+            color: var(--blue);
+            margin: 0 0 8px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        .analogy-box p {
+            color: rgba(76,201,255,0.9);
+            margin: 0;
+        }
+        .key-insight {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px dashed rgba(255,209,102,0.3);
+            background: rgba(255,209,102,0.08);
+            color: var(--yellow);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 10px 0;
+        }
+        .equation-box {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(118,167,255,0.2);
+            background: rgba(118,167,255,0.08);
+            color: var(--accent);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 10px 0;
+            text-align: center;
+        }
+        .equation-box h5 {
+            color: var(--accent);
+            margin: 0 0 8px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        .equation-box .equation {
+            color: var(--accent);
+            font-size: 14px;
+            font-weight: 900;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>📈 Linear Regression — Interactive Best-Fit Line Simulator</h1>
+            <p class="subtitle">Learn how computers find the optimal straight line through data to predict relationships between variables</p>
+
+            <div class="main-content">
+                <div class="control-panel">
+                    <p class="section-title">View</p>
+                    <div class="toggle" id="viewToggle" aria-label="view toggle">
+                        <div class="pill active" data-view="play">Playground</div>
+                        <div class="pill" data-view="how">How it works</div>
+                    </div>
+
+                    <div id="playView">
+                        <div class="instructions">
+                            <strong>Try this:</strong>
+                            <ol style="margin:8px 0 0; padding-left:18px">
+                                <li>Click to add data points on the chart.</li>
+                                <li>Press <strong>Find Best Line</strong>.</li>
+                                <li>Add more points to see how the line adapts.</li>
+                                <li>Try <strong>Add Sample Data</strong> for a quick demo.</li>
+                            </ol>
+                        </div>
+
+                        <div class="control-group">
+                            <button class="primary" onclick="findBestLine()">Find Best Line</button>
+                            <button onclick="clearAll()">Clear All</button>
+                            <button class="good" onclick="addRandomData()">Add Sample Data</button>
+                        </div>
+
+                        <div id="stats" class="stats" style="display: none;"></div>
+                    </div>
+
+                    <div id="howView" style="display:none" class="intuition-content">
+                        <h4>🤔 What is Linear Regression?</h4>
+                        <p>Think of linear regression as drawing a straight "trend line" through your points so you can predict y from x.</p>
+
+                        <div class="key-insight">
+                            💡 <strong>Core Idea:</strong> The line is your guess: y = m·x + b. Linear regression picks the line that makes the vertical "misses" as small as possible overall.
+                        </div>
+
+                        <div class="equation-box">
+                            <h5>📐 The Magic Formula</h5>
+                            <div class="equation">y = m·x + b</div>
+                        </div>
+
+                        <div class="analogy-box">
+                            <h5>🏠 House Price Example</h5>
+                            <p>Think of the slope (m) as "how much price increases per unit of size." The intercept (b) is like the "base price." Together, they predict any house's price!</p>
+                        </div>
+
+                        <h4>📏 Why This Line is "Best"</h4>
+                        <ul>
+                            <li><strong>Minimizes squared errors:</strong> Gets as close as possible to all points</li>
+                            <li><strong>Mathematical optimum:</strong> Uses calculus to find the perfect answer</li>
+                            <li><strong>Instant solution:</strong> No guessing or iteration needed</li>
+                        </ul>
+
+                        <div class="analogy-box">
+                            <h5>🎯 The Math Behind It</h5>
+                            <p>Linear regression uses a direct mathematical formula to instantly calculate the perfect line. It's like having the answer key instead of trial-and-error!</p>
+                        </div>
+
+                        <h4>📊 Understanding the Output</h4>
+                        <ul>
+                            <li><strong>Slope:</strong> How much Y changes per unit of X</li>
+                            <li><strong>Intercept:</strong> Y-value when X = 0</li>
+                            <li><strong>R-squared:</strong> How well line fits (0-100%)</li>
+                            <li><strong>Mean Squared Error:</strong> Average squared distance from line</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="visualization-panel">
+                    <div class="legend">
+                        <div class="legend-item">
+                            <span class="dot blue"></span>Data points ; line <span class="dot line"></span>
+                        </div>
+                    </div>
+
+                    <canvas id="canvas" width="600" height="400"></canvas>
+
+                    <div class="axis-labels">
+                        <strong>X-axis:</strong> Input values | <strong>Y-axis:</strong> Output values
+                    </div>
+
+                    <div id="step-info" class="step-indicator">
+                        🎯 Click on the chart to add data points, then press "Find Best Line"
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas and drawing setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        const state = {
+            points: [],
+            slope: 0,
+            intercept: 0,
+            hasLine: false
+        };
+
+        // Configuration
+        const MARGINS = { top: 30, right: 30, bottom: 50, left: 50 };
+        const PLOT_WIDTH = canvas.width - MARGINS.left - MARGINS.right;
+        const PLOT_HEIGHT = canvas.height - MARGINS.top - MARGINS.bottom;
+        const DATA_RANGE = { min: 0, max: 10 }; // Simple 0-10 range for both axes
+
+        const COLORS = {
+            dataPoint: '#4cc9ff',
+            regressionLine: '#76a7ff',
+            grid: 'rgba(255,255,255,0.07)',
+            axis: 'rgba(255,255,255,0.18)',
+            text: 'rgba(231,238,252,0.65)'
+        };
+
+        // Coordinate conversion
+        function dataToCanvas(dataX, dataY) {
+            const x = MARGINS.left + (dataX / DATA_RANGE.max) * PLOT_WIDTH;
+            const y = MARGINS.top + (1 - dataY / DATA_RANGE.max) * PLOT_HEIGHT;
+            return { x, y };
+        }
+
+        function canvasToData(canvasX, canvasY) {
+            const dataX = ((canvasX - MARGINS.left) / PLOT_WIDTH) * DATA_RANGE.max;
+            const dataY = (1 - (canvasY - MARGINS.top) / PLOT_HEIGHT) * DATA_RANGE.max;
+            return {
+                x: Math.max(0, Math.min(DATA_RANGE.max, dataX)),
+                y: Math.max(0, Math.min(DATA_RANGE.max, dataY))
+            };
+        }
+
+        // Drawing functions
+        function clear() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = COLORS.grid;
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([2, 4]);
+
+            // Vertical lines
+            for (let i = 0; i <= 10; i += 2) {
+                const pos = dataToCanvas(i, 0);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, MARGINS.top);
+                ctx.lineTo(pos.x, canvas.height - MARGINS.bottom);
+                ctx.stroke();
+            }
+
+            // Horizontal lines
+            for (let i = 0; i <= 10; i += 2) {
+                const pos = dataToCanvas(0, i);
+                ctx.beginPath();
+                ctx.moveTo(MARGINS.left, pos.y);
+                ctx.lineTo(canvas.width - MARGINS.right, pos.y);
+                ctx.stroke();
+            }
+
+            ctx.setLineDash([]);
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = COLORS.axis;
+            ctx.lineWidth = 2;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(MARGINS.left, canvas.height - MARGINS.bottom);
+            ctx.lineTo(canvas.width - MARGINS.right, canvas.height - MARGINS.bottom);
+            ctx.stroke();
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(MARGINS.left, MARGINS.top);
+            ctx.lineTo(MARGINS.left, canvas.height - MARGINS.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = COLORS.text;
+            ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+            ctx.textAlign = 'center';
+
+            // X-axis labels
+            for (let i = 0; i <= 10; i += 2) {
+                const pos = dataToCanvas(i, 0);
+                ctx.fillText(i.toString(), pos.x, canvas.height - MARGINS.bottom + 20);
+            }
+
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 10; i += 2) {
+                const pos = dataToCanvas(0, i);
+                ctx.fillText(i.toString(), MARGINS.left - 10, pos.y + 4);
+            }
+        }
+
+        function drawPoints() {
+            state.points.forEach(point => {
+                const pos = dataToCanvas(point.x, point.y);
+
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI);
+                ctx.fillStyle = COLORS.dataPoint;
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+                ctx.stroke();
+            });
+        }
+
+        function drawRegressionLine() {
+            if (!state.hasLine || state.points.length < 2) return;
+
+            const startX = 0;
+            const endX = DATA_RANGE.max;
+            const startY = state.slope * startX + state.intercept;
+            const endY = state.slope * endX + state.intercept;
+
+            const startPos = dataToCanvas(startX, startY);
+            const endPos = dataToCanvas(endX, endY);
+
+            ctx.strokeStyle = COLORS.regressionLine;
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(startPos.x, startPos.y);
+            ctx.lineTo(endPos.x, endPos.y);
+            ctx.stroke();
+
+            // Draw equation on the line
+            const midPos = dataToCanvas(DATA_RANGE.max / 2, state.slope * DATA_RANGE.max / 2 + state.intercept);
+
+            ctx.fillStyle = 'rgba(0,0,0,0.7)';
+            ctx.strokeStyle = COLORS.regressionLine;
+            ctx.lineWidth = 1;
+
+            const equation = `y = ${state.slope.toFixed(2)}·x + ${state.intercept.toFixed(2)}`;
+            ctx.font = '12px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace';
+            const textWidth = ctx.measureText(equation).width;
+
+            ctx.fillRect(midPos.x - textWidth/2 - 6, midPos.y - 10, textWidth + 12, 20);
+            ctx.strokeRect(midPos.x - textWidth/2 - 6, midPos.y - 10, textWidth + 12, 20);
+
+            ctx.fillStyle = '#e7eefc';
+            ctx.textAlign = 'center';
+            ctx.fillText(equation, midPos.x, midPos.y + 3);
+        }
+
+        function draw() {
+            clear();
+            drawGrid();
+            drawAxes();
+            if (state.hasLine) {
+                drawRegressionLine();
+            }
+            drawPoints();
+        }
+
+        // Linear regression calculation (least squares)
+        function calculateLinearRegression() {
+            if (state.points.length < 2) return;
+
+            const n = state.points.length;
+            let sumX = 0, sumY = 0, sumXY = 0, sumXX = 0;
+
+            state.points.forEach(point => {
+                sumX += point.x;
+                sumY += point.y;
+                sumXY += point.x * point.y;
+                sumXX += point.x * point.x;
+            });
+
+            // Calculate slope and intercept using least squares formula
+            const slope = (n * sumXY - sumX * sumY) / (n * sumXX - sumX * sumX);
+            const intercept = (sumY - slope * sumX) / n;
+
+            state.slope = slope;
+            state.intercept = intercept;
+            state.hasLine = true;
+        }
+
+        function calculateStats() {
+            if (!state.hasLine || state.points.length < 2) return null;
+
+            let mse = 0;
+            let ssTotal = 0;
+            let ssRes = 0;
+
+            const meanY = state.points.reduce((sum, p) => sum + p.y, 0) / state.points.length;
+
+            state.points.forEach(point => {
+                const predicted = state.slope * point.x + state.intercept;
+                const error = point.y - predicted;
+
+                mse += error * error;
+                ssTotal += (point.y - meanY) * (point.y - meanY);
+                ssRes += error * error;
+            });
+
+            mse /= state.points.length;
+            const rSquared = 1 - (ssRes / ssTotal);
+
+            return { mse, rSquared };
+        }
+
+        // Event handlers
+        canvas.addEventListener('click', function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const canvasX = event.clientX - rect.left;
+            const canvasY = event.clientY - rect.top;
+
+            // Check if click is within plot area
+            if (canvasX >= MARGINS.left && canvasX <= canvas.width - MARGINS.right &&
+                canvasY >= MARGINS.top && canvasY <= canvas.height - MARGINS.bottom) {
+
+                const dataPoint = canvasToData(canvasX, canvasY);
+                state.points.push(dataPoint);
+
+                draw();
+
+                if (state.points.length >= 2) {
+                    document.getElementById('step-info').textContent = `Added data point! You now have ${state.points.length} points. Click "Find Best Line" to see the regression.`;
+                } else {
+                    document.getElementById('step-info').textContent = `Added data point! Add at least 1 more point to enable regression.`;
+                }
+            }
+        });
+
+        // Button functions
+        function findBestLine() {
+            if (state.points.length < 2) {
+                document.getElementById('step-info').textContent = "Add at least 2 data points first!";
+                return;
+            }
+
+            calculateLinearRegression();
+            draw();
+
+            const stats = calculateStats();
+            if (stats) {
+                const statsDiv = document.getElementById('stats');
+                statsDiv.innerHTML = `
+                    <div class="stats-title">Linear Regression Results</div>
+                    <div class="stats-value" style="font-size: 12px; line-height: 1.4;">
+                        <strong>Line equation:</strong> y = ${state.slope.toFixed(3)}·x + ${state.intercept.toFixed(2)}<br>
+                        <strong>R-squared:</strong> ${(stats.rSquared * 100).toFixed(1)}% (fit quality)<br>
+                        <strong>Mean Squared Error:</strong> ${stats.mse.toFixed(2)}
+                    </div>
+                `;
+                statsDiv.style.display = 'block';
+            }
+
+            document.getElementById('step-info').textContent = '✨ Best-fit line found! The line minimizes the squared errors to all points.';
+        }
+
+        function clearAll() {
+            state.points = [];
+            state.hasLine = false;
+            state.slope = 0;
+            state.intercept = 0;
+
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('step-info').textContent = '🎯 Click on the chart to add data points, then click "Find Best Line" to see linear regression in action!';
+
+            draw();
+        }
+
+        function addRandomData() {
+            // Clear existing data first
+            state.points = [];
+
+            // Generate random data with a clear linear relationship plus some noise
+            const trueSlope = 0.3 + Math.random() * 0.6; // 0.3 to 0.9
+            const trueIntercept = 1 + Math.random() * 3; // 1 to 4
+            const noiseLevel = 0.8;
+
+            for (let i = 0; i < 8; i++) {
+                const x = 1 + (i / 7) * 8; // Spread from 1 to 9
+                const y = trueSlope * x + trueIntercept + (Math.random() - 0.5) * noiseLevel;
+
+                state.points.push({
+                    x: Math.max(0.5, Math.min(9.5, x)),
+                    y: Math.max(0.5, Math.min(9.5, y))
+                });
+            }
+
+            state.hasLine = false;
+            draw();
+
+            document.getElementById('step-info').textContent = `Added sample data with ${state.points.length} points! Click "Find Best Line" to see the regression.`;
+        }
+
+        // View toggle functionality
+        const viewToggle = document.getElementById('viewToggle');
+        const playView = document.querySelector('#playView');
+        const howView = document.querySelector('#howView');
+
+        function setView(view) {
+            // Update toggle pills
+            [...viewToggle.querySelectorAll('.pill')].forEach(p => {
+                p.classList.toggle('active', p.dataset.view === view);
+            });
+
+            // Show/hide content
+            if (playView) playView.style.display = (view === 'play') ? 'block' : 'none';
+            if (howView) howView.style.display = (view === 'how') ? 'block' : 'none';
+        }
+
+        // Add click handler for view toggle
+        if (viewToggle) {
+            viewToggle.addEventListener('click', (e) => {
+                const pill = e.target.closest('.pill');
+                if (!pill) return;
+                setView(pill.dataset.view);
+            });
+        }
+
+        // Initialize
+        draw();
+    </script>
+</body>
+</html>
