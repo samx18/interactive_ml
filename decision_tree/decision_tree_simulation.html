@@ -1,0 +1,1172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decision Tree: Interactive Classification Simulator</title>
+    <style>
+        :root{
+            --bg:#0b1220;
+            --panel:#101a2f;
+            --text:#e7eefc;
+            --muted:#a8b3cc;
+            --accent:#76a7ff;
+            --red:#ff5a7a;
+            --blue:#4cc9ff;
+            --yellow:#ffd166;
+            --good:#2dd4bf;
+            --purple:#a78bfa;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+            background: radial-gradient(1200px 600px at 15% 20%, #142246 0%, var(--bg) 60%);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            background: linear-gradient(180deg, rgba(16,26,47,0.95), rgba(16,26,47,0.75));
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+            overflow: hidden;
+            padding: 30px;
+        }
+        h1 {
+            color: var(--text);
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 24px;
+            font-weight: 800;
+            letter-spacing: 0.2px;
+        }
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 30px;
+            font-size: 16px;
+            line-height: 1.35;
+        }
+        .main-content {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 14px;
+            align-items: flex-start;
+        }
+        @media (max-width: 980px){
+            .main-content{grid-template-columns: 1fr}
+        }
+        .visualization-panel {
+            order: 2;
+        }
+        .control-panel {
+            order: 1;
+            background: linear-gradient(180deg, rgba(16,26,47,0.95), rgba(16,26,47,0.75));
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
+            box-shadow: 0 18px 50px rgba(0,0,0,0.35);
+            overflow: hidden;
+            padding: 14px;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 400px;
+            background: rgba(0,0,0,0.18);
+            border-radius: 12px;
+            cursor: crosshair;
+        }
+        .canvas-wrap {
+            position: relative;
+        }
+        .control-group {
+            margin-bottom: 14px;
+        }
+        .section-title {
+            font-size: 12px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: #cfe0ff;
+            opacity: 0.9;
+            margin: 0 0 10px;
+        }
+        .legend {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            justify-content: center;
+            font-size: 12px;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--muted);
+        }
+        .dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 6px;
+            box-shadow: 0 0 0 2px rgba(0,0,0,0.35);
+        }
+        .dot.blue { background: var(--blue); }
+        .dot.red { background: var(--red); }
+        .dot.purple { background: var(--purple); }
+        .instructions {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px dashed rgba(255,255,255,0.18);
+            background: rgba(0,0,0,0.18);
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+            margin-bottom: 14px;
+        }
+        .instructions h4 {
+            color: var(--text);
+            margin: 0 0 8px;
+            font-size: 13px;
+        }
+        .stats {
+            border: 1px solid rgba(255,255,255,0.08);
+            background: rgba(0,0,0,0.12);
+            border-radius: 12px;
+            padding: 10px;
+            margin-top: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        .stats-title {
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 6px;
+        }
+        .stats-value {
+            font-size: 14px;
+            font-weight: 900;
+            color: var(--text);
+        }
+        button, .pill {
+            border: 1px solid rgba(255,255,255,0.12);
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            padding: 9px 10px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 13px;
+            transition: transform 0.04s ease, background 0.2s ease, border 0.2s ease;
+            user-select: none;
+            margin-right: 8px;
+            margin-bottom: 8px;
+        }
+        button:hover {
+            background: rgba(255,255,255,0.10);
+        }
+        button:active {
+            transform: translateY(1px);
+        }
+        button.primary {
+            background: linear-gradient(180deg, rgba(118,167,255,0.35), rgba(118,167,255,0.15));
+            border-color: rgba(118,167,255,0.45);
+        }
+        button.good {
+            background: linear-gradient(180deg, rgba(45,212,191,0.25), rgba(45,212,191,0.10));
+            border-color: rgba(45,212,191,0.35);
+        }
+        .axis-labels {
+            text-align: center;
+            margin-top: 10px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .step-indicator {
+            border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(0,0,0,0.20);
+            border-radius: 999px;
+            padding: 6px 10px;
+            font-size: 12px;
+            color: var(--muted);
+            backdrop-filter: blur(6px);
+            margin-top: 12px;
+        }
+        .toggle {
+            display: flex;
+            gap: 8px;
+            padding: 6px;
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.10);
+            background: rgba(0,0,0,0.15);
+            margin-bottom: 14px;
+        }
+        .toggle .pill {
+            padding: 8px 10px;
+            border-radius: 12px;
+            border-color: transparent;
+            background: transparent;
+            color: var(--muted);
+            font-weight: 800;
+            font-size: 12px;
+            margin: 0;
+        }
+        .toggle .pill.active {
+            color: var(--text);
+            background: rgba(255,255,255,0.10);
+            border-color: rgba(255,255,255,0.10);
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .intuition-content {
+            line-height: 1.6;
+            color: var(--muted);
+            font-size: 12px;
+        }
+        .intuition-content h4 {
+            color: var(--text);
+            margin-top: 14px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        .intuition-content ul, .intuition-content p {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+        .intuition-content strong {
+            color: var(--text);
+        }
+        .intuition-content li {
+            margin-bottom: 4px;
+        }
+        .analogy-box {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px dashed rgba(76,201,255,0.3);
+            background: rgba(76,201,255,0.08);
+            color: var(--blue);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 10px 0;
+        }
+        .analogy-box h5 {
+            color: var(--blue);
+            margin: 0 0 8px;
+            font-size: 13px;
+            font-weight: 900;
+        }
+        .analogy-box p {
+            color: rgba(76,201,255,0.9);
+            margin: 0;
+        }
+        .key-insight {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px dashed rgba(255,209,102,0.3);
+            background: rgba(255,209,102,0.08);
+            color: var(--yellow);
+            font-size: 12px;
+            line-height: 1.45;
+            margin: 10px 0;
+        }
+        .class-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 14px;
+        }
+        .class-btn {
+            flex: 1;
+            padding: 8px;
+            border-radius: 8px;
+            border: 2px solid transparent;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            text-align: center;
+        }
+        .class-btn.class-0 {
+            background: rgba(76,201,255,0.2);
+            color: var(--blue);
+        }
+        .class-btn.class-1 {
+            background: rgba(255,90,122,0.2);
+            color: var(--red);
+        }
+        .class-btn.class-2 {
+            background: rgba(167,139,250,0.2);
+            color: var(--purple);
+        }
+        .class-btn.active {
+            border-color: currentColor;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .slider {
+            flex: 1;
+            height: 6px;
+            border-radius: 3px;
+            background: rgba(255,255,255,0.12);
+            outline: none;
+            appearance: none;
+        }
+        .slider::-webkit-slider-thumb {
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, var(--accent), #5a8fff);
+            cursor: pointer;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .slider::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: linear-gradient(145deg, var(--accent), #5a8fff);
+            cursor: pointer;
+            border: none;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+        }
+        .slider-value {
+            font-weight: bold;
+            color: var(--accent);
+            font-size: 14px;
+            min-width: 30px;
+            text-align: center;
+        }
+        .tree-viz {
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+            font-size: 11px;
+            line-height: 1.6;
+            white-space: pre;
+            color: var(--muted);
+        }
+        .tree-node {
+            color: var(--accent);
+        }
+        .tree-leaf-0 {
+            color: var(--blue);
+            font-weight: bold;
+        }
+        .tree-leaf-1 {
+            color: var(--red);
+            font-weight: bold;
+        }
+        .tree-leaf-2 {
+            color: var(--purple);
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>🌳 Decision Tree — Interactive Classification Simulator</h1>
+            <p class="subtitle">Learn how computers make decisions by asking questions and splitting data into groups based on features</p>
+
+            <div class="main-content">
+                <div class="control-panel">
+                    <p class="section-title">View</p>
+                    <div class="toggle" id="viewToggle" aria-label="view toggle">
+                        <div class="pill active" data-view="play">Playground</div>
+                        <div class="pill" data-view="how">How it works</div>
+                    </div>
+
+                    <div id="playView">
+                        <p class="section-title">Add Data Points</p>
+                        <div class="class-selector">
+                            <div class="class-btn class-0 active" data-class="0">Class A</div>
+                            <div class="class-btn class-1" data-class="1">Class B</div>
+                            <div class="class-btn class-2" data-class="2">Class C</div>
+                        </div>
+
+                        <div class="instructions">
+                            <strong>Try this:</strong>
+                            <ol style="margin:8px 0 0; padding-left:18px">
+                                <li>Select a class above (A, B, or C).</li>
+                                <li>Click on the chart to add points of that class.</li>
+                                <li>Press <strong>Build Decision Tree</strong> to see how it splits the data.</li>
+                                <li>Adjust max depth to see simpler or more complex trees.</li>
+                            </ol>
+                        </div>
+
+                        <p class="section-title">Tree Settings</p>
+                        <div class="slider-container">
+                            <span style="font-size: 12px; color: var(--muted);">Max Depth:</span>
+                            <input type="range" id="depthSlider" class="slider" min="1" max="4" value="3">
+                            <span class="slider-value" id="depthValue">3</span>
+                        </div>
+
+                        <div class="control-group">
+                            <button class="primary" onclick="buildTree()">Build Decision Tree</button>
+                            <button onclick="clearAll()">Clear All</button>
+                            <button class="good" onclick="addSampleData()">Add Sample Data</button>
+                        </div>
+
+                        <div id="stats" class="stats" style="display: none;"></div>
+
+                        <div id="treeViz" style="display: none; margin-top: 14px;">
+                            <p class="section-title">Tree Flowchart</p>
+                            <div style="background: rgba(0,0,0,0.18); border-radius: 12px; padding: 10px; overflow-x: auto;">
+                                <canvas id="treeCanvas" width="380" height="400"></canvas>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="howView" style="display:none" class="intuition-content">
+                        <h4>🤔 What is a Decision Tree?</h4>
+                        <p>A decision tree makes predictions by asking a series of yes/no questions about the data. Like playing "20 Questions," each answer narrows down the possibilities until you reach a conclusion.</p>
+
+                        <div class="key-insight">
+                            💡 <strong>Core Idea:</strong> At each step, find the best question to ask that splits your data into the purest groups possible. Keep asking questions until each group is pure (or small enough).
+                        </div>
+
+                        <div class="analogy-box">
+                            <h5>🍎 Fruit Sorting Analogy</h5>
+                            <p>Imagine sorting fruit: "Is it round?" → Yes leads to apples/oranges. "Is it orange-colored?" → Yes = orange, No = apple. Each question creates a branch, and the leaves are your final answers!</p>
+                        </div>
+
+                        <h4>📏 How Does It Decide What to Ask?</h4>
+                        <ul>
+                            <li><strong>Gini Impurity:</strong> Measures how "mixed" a group is. Pure groups (all one class) have Gini = 0.</li>
+                            <li><strong>Best split:</strong> Choose the question that creates the purest subgroups.</li>
+                            <li><strong>Recursive splitting:</strong> Repeat the process on each subgroup.</li>
+                            <li><strong>Stop conditions:</strong> Stop when groups are pure, too small, or max depth reached.</li>
+                        </ul>
+
+                        <div class="analogy-box">
+                            <h5>🎯 The Splitting Process</h5>
+                            <p>Think of each split as drawing a line (horizontal or vertical) that best separates different classes. The algorithm tries every possible line and picks the one that creates the cleanest separation!</p>
+                        </div>
+
+                        <h4>🌲 Tree Structure</h4>
+                        <ul>
+                            <li><strong>Root node:</strong> The first question (top of tree)</li>
+                            <li><strong>Internal nodes:</strong> Middle questions (branches)</li>
+                            <li><strong>Leaf nodes:</strong> Final predictions (ends of branches)</li>
+                            <li><strong>Depth:</strong> Number of questions from root to leaf</li>
+                        </ul>
+
+                        <div class="key-insight">
+                            🎪 <strong>Max Depth Trade-off:</strong> Shallow trees (depth 1-2) are simple but may be too general. Deep trees (depth 4+) fit training data perfectly but may overfit. Depth 2-3 often works best!
+                        </div>
+
+                        <h4>📊 Advantages & Disadvantages</h4>
+                        <p><strong>Advantages:</strong></p>
+                        <ul>
+                            <li>Easy to understand and visualize</li>
+                            <li>No data scaling needed</li>
+                            <li>Handles both numerical and categorical data</li>
+                            <li>Shows which features matter most</li>
+                        </ul>
+                        <p><strong>Disadvantages:</strong></p>
+                        <ul>
+                            <li>Can overfit if too deep</li>
+                            <li>Small data changes can create different trees</li>
+                            <li>Biased toward features with more levels</li>
+                        </ul>
+
+                        <h4>🌍 Real-World Examples</h4>
+                        <ul>
+                            <li><strong>Medical diagnosis:</strong> "Does patient have symptom X?" → guides treatment</li>
+                            <li><strong>Loan approval:</strong> "Is income > $50k?" → "Credit score > 700?" → Approve/Deny</li>
+                            <li><strong>Customer segmentation:</strong> Classify customers by behavior patterns</li>
+                            <li><strong>Email filtering:</strong> "Contains word 'free'?" → "Has attachments?" → Spam/Not spam</li>
+                        </ul>
+
+                        <div class="analogy-box">
+                            <h5>🤖 Why Trees Are Popular</h5>
+                            <p>Decision trees form the foundation of powerful ensemble methods like Random Forests and Gradient Boosting, which combine many trees to make even better predictions!</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="visualization-panel">
+                    <div class="legend">
+                        <div class="legend-item">
+                            <span class="dot blue"></span>Class A ; <span class="dot red"></span>Class B ; <span class="dot purple"></span>Class C
+                        </div>
+                    </div>
+
+                    <canvas id="canvas" width="600" height="400"></canvas>
+
+                    <div class="axis-labels">
+                        <strong>X-axis:</strong> Feature 1 | <strong>Y-axis:</strong> Feature 2
+                    </div>
+
+                    <div id="step-info" class="step-indicator">
+                        🎯 Select a class and click on the chart to add data points
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Canvas and drawing setup
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // State
+        const state = {
+            points: [],
+            selectedClass: 0, // 0, 1, or 2
+            hasTree: false,
+            tree: null,
+            splits: [] // Array of {axis: 'x'|'y', value: number, depth: number, bounds: {minX, maxX, minY, maxY}}
+        };
+
+        // Configuration
+        const MARGINS = { top: 30, right: 30, bottom: 50, left: 50 };
+        const PLOT_WIDTH = canvas.width - MARGINS.left - MARGINS.right;
+        const PLOT_HEIGHT = canvas.height - MARGINS.top - MARGINS.bottom;
+        const DATA_RANGE = { min: 0, max: 10 };
+
+        const COLORS = {
+            class0: '#4cc9ff',
+            class1: '#ff5a7a',
+            class2: '#a78bfa',
+            split: '#ffd166',
+            grid: 'rgba(255,255,255,0.07)',
+            axis: 'rgba(255,255,255,0.18)',
+            text: 'rgba(231,238,252,0.65)',
+            region: 'rgba(255,255,255,0.03)'
+        };
+
+        // Coordinate conversion
+        function dataToCanvas(dataX, dataY) {
+            const x = MARGINS.left + (dataX / DATA_RANGE.max) * PLOT_WIDTH;
+            const y = MARGINS.top + (1 - dataY / DATA_RANGE.max) * PLOT_HEIGHT;
+            return { x, y };
+        }
+
+        function canvasToData(canvasX, canvasY) {
+            const dataX = ((canvasX - MARGINS.left) / PLOT_WIDTH) * DATA_RANGE.max;
+            const dataY = (1 - (canvasY - MARGINS.top) / PLOT_HEIGHT) * DATA_RANGE.max;
+            return {
+                x: Math.max(0, Math.min(DATA_RANGE.max, dataX)),
+                y: Math.max(0, Math.min(DATA_RANGE.max, dataY))
+            };
+        }
+
+        // Drawing functions
+        function clear() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        function drawGrid() {
+            ctx.strokeStyle = COLORS.grid;
+            ctx.lineWidth = 0.5;
+            ctx.setLineDash([2, 4]);
+
+            // Vertical lines
+            for (let i = 0; i <= 10; i += 2) {
+                const pos = dataToCanvas(i, 0);
+                ctx.beginPath();
+                ctx.moveTo(pos.x, MARGINS.top);
+                ctx.lineTo(pos.x, canvas.height - MARGINS.bottom);
+                ctx.stroke();
+            }
+
+            // Horizontal lines
+            for (let i = 0; i <= 10; i += 2) {
+                const pos = dataToCanvas(0, i);
+                ctx.beginPath();
+                ctx.moveTo(MARGINS.left, pos.y);
+                ctx.lineTo(canvas.width - MARGINS.right, pos.y);
+                ctx.stroke();
+            }
+
+            ctx.setLineDash([]);
+        }
+
+        function drawAxes() {
+            ctx.strokeStyle = COLORS.axis;
+            ctx.lineWidth = 2;
+
+            // X-axis
+            ctx.beginPath();
+            ctx.moveTo(MARGINS.left, canvas.height - MARGINS.bottom);
+            ctx.lineTo(canvas.width - MARGINS.right, canvas.height - MARGINS.bottom);
+            ctx.stroke();
+
+            // Y-axis
+            ctx.beginPath();
+            ctx.moveTo(MARGINS.left, MARGINS.top);
+            ctx.lineTo(MARGINS.left, canvas.height - MARGINS.bottom);
+            ctx.stroke();
+
+            // Labels
+            ctx.fillStyle = COLORS.text;
+            ctx.font = '12px system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial';
+            ctx.textAlign = 'center';
+
+            // X-axis labels
+            for (let i = 0; i <= 10; i += 2) {
+                const pos = dataToCanvas(i, 0);
+                ctx.fillText(i.toString(), pos.x, canvas.height - MARGINS.bottom + 20);
+            }
+
+            // Y-axis labels
+            ctx.textAlign = 'right';
+            for (let i = 0; i <= 10; i += 2) {
+                const pos = dataToCanvas(0, i);
+                ctx.fillText(i.toString(), MARGINS.left - 10, pos.y + 4);
+            }
+        }
+
+        function drawSplits() {
+            if (!state.hasTree || state.splits.length === 0) return;
+
+            state.splits.forEach(split => {
+                ctx.strokeStyle = COLORS.split;
+                ctx.lineWidth = 2;
+                ctx.setLineDash([8, 4]);
+                ctx.beginPath();
+
+                if (split.axis === 'x') {
+                    // Vertical split
+                    const pos = dataToCanvas(split.value, 0);
+                    const topY = dataToCanvas(0, split.bounds.maxY).y;
+                    const bottomY = dataToCanvas(0, split.bounds.minY).y;
+                    ctx.moveTo(pos.x, topY);
+                    ctx.lineTo(pos.x, bottomY);
+                } else {
+                    // Horizontal split
+                    const pos = dataToCanvas(0, split.value);
+                    const leftX = dataToCanvas(split.bounds.minX, 0).x;
+                    const rightX = dataToCanvas(split.bounds.maxX, 0).x;
+                    ctx.moveTo(leftX, pos.y);
+                    ctx.lineTo(rightX, pos.y);
+                }
+
+                ctx.stroke();
+                ctx.setLineDash([]);
+            });
+        }
+
+        function drawPoints() {
+            state.points.forEach(point => {
+                const pos = dataToCanvas(point.x, point.y);
+
+                ctx.beginPath();
+                ctx.arc(pos.x, pos.y, 8, 0, 2 * Math.PI);
+                ctx.fillStyle = COLORS['class' + point.class];
+                ctx.fill();
+                ctx.lineWidth = 2;
+                ctx.strokeStyle = 'rgba(0,0,0,0.55)';
+                ctx.stroke();
+            });
+        }
+
+        function draw() {
+            clear();
+            drawGrid();
+            drawAxes();
+            drawSplits();
+            drawPoints();
+        }
+
+        // Decision Tree Algorithm
+        function calculateGini(points) {
+            if (points.length === 0) return 0;
+
+            const counts = { 0: 0, 1: 0, 2: 0 };
+            points.forEach(p => counts[p.class]++);
+
+            let gini = 1;
+            for (let c in counts) {
+                const prob = counts[c] / points.length;
+                gini -= prob * prob;
+            }
+            return gini;
+        }
+
+        function getMajorityClass(points) {
+            if (points.length === 0) return 0;
+
+            const counts = { 0: 0, 1: 0, 2: 0 };
+            points.forEach(p => counts[p.class]++);
+
+            let maxClass = 0;
+            let maxCount = counts[0];
+            for (let c in counts) {
+                if (counts[c] > maxCount) {
+                    maxCount = counts[c];
+                    maxClass = parseInt(c);
+                }
+            }
+            return maxClass;
+        }
+
+        function findBestSplit(points, bounds) {
+            let bestGain = -1;
+            let bestSplit = null;
+
+            // Try splits on X axis
+            const xValues = [...new Set(points.map(p => p.x))].sort((a, b) => a - b);
+            for (let i = 0; i < xValues.length - 1; i++) {
+                const splitValue = (xValues[i] + xValues[i + 1]) / 2;
+                const left = points.filter(p => p.x <= splitValue);
+                const right = points.filter(p => p.x > splitValue);
+
+                const gain = calculateGini(points) -
+                    (left.length / points.length) * calculateGini(left) -
+                    (right.length / points.length) * calculateGini(right);
+
+                if (gain > bestGain) {
+                    bestGain = gain;
+                    bestSplit = { axis: 'x', value: splitValue, left, right };
+                }
+            }
+
+            // Try splits on Y axis
+            const yValues = [...new Set(points.map(p => p.y))].sort((a, b) => a - b);
+            for (let i = 0; i < yValues.length - 1; i++) {
+                const splitValue = (yValues[i] + yValues[i + 1]) / 2;
+                const left = points.filter(p => p.y <= splitValue);
+                const right = points.filter(p => p.y > splitValue);
+
+                const gain = calculateGini(points) -
+                    (left.length / points.length) * calculateGini(left) -
+                    (right.length / points.length) * calculateGini(right);
+
+                if (gain > bestGain) {
+                    bestGain = gain;
+                    bestSplit = { axis: 'y', value: splitValue, left, right };
+                }
+            }
+
+            return bestSplit;
+        }
+
+        function buildDecisionTree(points, depth, maxDepth, bounds) {
+            // Stop conditions
+            if (depth >= maxDepth || points.length < 2 || calculateGini(points) === 0) {
+                return {
+                    type: 'leaf',
+                    class: getMajorityClass(points),
+                    points: points.length,
+                    gini: calculateGini(points)
+                };
+            }
+
+            const split = findBestSplit(points, bounds);
+            if (!split || split.left.length === 0 || split.right.length === 0) {
+                return {
+                    type: 'leaf',
+                    class: getMajorityClass(points),
+                    points: points.length,
+                    gini: calculateGini(points)
+                };
+            }
+
+            // Add split to visualization
+            state.splits.push({
+                axis: split.axis,
+                value: split.value,
+                depth: depth,
+                bounds: bounds
+            });
+
+            // Recursively build left and right subtrees
+            let leftBounds = { ...bounds };
+            let rightBounds = { ...bounds };
+
+            if (split.axis === 'x') {
+                leftBounds.maxX = split.value;
+                rightBounds.minX = split.value;
+            } else {
+                leftBounds.maxY = split.value;
+                rightBounds.minY = split.value;
+            }
+
+            return {
+                type: 'node',
+                axis: split.axis,
+                value: split.value,
+                points: points.length,
+                gini: calculateGini(points),
+                left: buildDecisionTree(split.left, depth + 1, maxDepth, leftBounds),
+                right: buildDecisionTree(split.right, depth + 1, maxDepth, rightBounds)
+            };
+        }
+
+        function treeToString(node, indent = 0) {
+            const prefix = '  '.repeat(indent);
+
+            if (node.type === 'leaf') {
+                const className = ['A', 'B', 'C'][node.class];
+                return `${prefix}<span class="tree-leaf-${node.class}">→ Predict Class ${className}</span> (n=${node.points}, gini=${node.gini.toFixed(3)})\n`;
+            }
+
+            const axisName = node.axis === 'x' ? 'Feature 1' : 'Feature 2';
+            let result = `${prefix}<span class="tree-node">If ${axisName} ≤ ${node.value.toFixed(2)}</span> (n=${node.points}, gini=${node.gini.toFixed(3)})\n`;
+            result += treeToString(node.left, indent + 1);
+            result += `${prefix}<span class="tree-node">Else (${axisName} > ${node.value.toFixed(2)})</span>\n`;
+            result += treeToString(node.right, indent + 1);
+
+            return result;
+        }
+
+        function buildTree() {
+            if (state.points.length < 3) {
+                document.getElementById('step-info').textContent = "Add at least 3 data points to build a tree!";
+                return;
+            }
+
+            const maxDepth = parseInt(document.getElementById('depthSlider').value);
+            state.splits = [];
+
+            const bounds = {
+                minX: 0,
+                maxX: DATA_RANGE.max,
+                minY: 0,
+                maxY: DATA_RANGE.max
+            };
+
+            state.tree = buildDecisionTree(state.points, 0, maxDepth, bounds);
+            state.hasTree = true;
+
+            draw();
+
+            // Calculate accuracy
+            let correct = 0;
+            state.points.forEach(point => {
+                const predicted = predictPoint(point, state.tree);
+                if (predicted === point.class) correct++;
+            });
+
+            const accuracy = (correct / state.points.length) * 100;
+
+            // Display tree structure
+            const statsDiv = document.getElementById('stats');
+            statsDiv.innerHTML = `
+                <div class="stats-title">Decision Tree Structure</div>
+                <div class="tree-viz">${treeToString(state.tree)}</div>
+                <div class="stats-title" style="margin-top: 10px;">Performance</div>
+                <div class="stats-value" style="font-size: 12px; line-height: 1.4;">
+                    <strong>Training accuracy:</strong> ${accuracy.toFixed(1)}%<br>
+                    <strong>Total nodes:</strong> ${countNodes(state.tree)}<br>
+                    <strong>Tree depth:</strong> ${getTreeDepth(state.tree)}<br>
+                    <strong>Decision boundaries:</strong> ${state.splits.length}
+                </div>
+            `;
+            statsDiv.style.display = 'block';
+
+            // Draw tree flowchart
+            drawTreeFlowchart();
+            document.getElementById('treeViz').style.display = 'block';
+
+            document.getElementById('step-info').textContent = '✨ Decision tree built! Yellow lines show decision boundaries.';
+        }
+
+        function predictPoint(point, node) {
+            if (node.type === 'leaf') {
+                return node.class;
+            }
+
+            if (node.axis === 'x') {
+                return point.x <= node.value ?
+                    predictPoint(point, node.left) :
+                    predictPoint(point, node.right);
+            } else {
+                return point.y <= node.value ?
+                    predictPoint(point, node.left) :
+                    predictPoint(point, node.right);
+            }
+        }
+
+        function countNodes(node) {
+            if (node.type === 'leaf') return 1;
+            return 1 + countNodes(node.left) + countNodes(node.right);
+        }
+
+        function getTreeDepth(node) {
+            if (node.type === 'leaf') return 0;
+            return 1 + Math.max(getTreeDepth(node.left), getTreeDepth(node.right));
+        }
+
+        function drawTreeFlowchart() {
+            const treeCanvas = document.getElementById('treeCanvas');
+            const treeCtx = treeCanvas.getContext('2d');
+
+            // Clear canvas
+            treeCtx.clearRect(0, 0, treeCanvas.width, treeCanvas.height);
+
+            if (!state.tree) return;
+
+            const nodeWidth = 90;
+            const nodeHeight = 50;
+            const levelHeight = 80;
+            const horizontalPadding = 10;
+
+            // Calculate tree layout positions
+            function calculateLayout(node, depth = 0, minX = 0, maxX = treeCanvas.width) {
+                const x = (minX + maxX) / 2;
+                const y = depth * levelHeight + 30;
+
+                node.x = x;
+                node.y = y;
+
+                if (node.type === 'node') {
+                    const midX = (minX + maxX) / 2;
+                    calculateLayout(node.left, depth + 1, minX, midX);
+                    calculateLayout(node.right, depth + 1, midX, maxX);
+                }
+            }
+
+            // Draw connections
+            function drawConnections(node) {
+                if (node.type === 'leaf') return;
+
+                treeCtx.strokeStyle = 'rgba(168,179,204,0.5)';
+                treeCtx.lineWidth = 2;
+
+                // Draw line to left child
+                treeCtx.beginPath();
+                treeCtx.moveTo(node.x, node.y + nodeHeight / 2);
+                treeCtx.lineTo(node.left.x, node.left.y - nodeHeight / 2);
+                treeCtx.stroke();
+
+                // Label "Yes" / "≤"
+                const leftMidX = (node.x + node.left.x) / 2;
+                const leftMidY = (node.y + nodeHeight / 2 + node.left.y - nodeHeight / 2) / 2;
+                treeCtx.fillStyle = '#2dd4bf';
+                treeCtx.font = 'bold 10px system-ui';
+                treeCtx.fillText('Yes', leftMidX - 15, leftMidY);
+
+                // Draw line to right child
+                treeCtx.beginPath();
+                treeCtx.moveTo(node.x, node.y + nodeHeight / 2);
+                treeCtx.lineTo(node.right.x, node.right.y - nodeHeight / 2);
+                treeCtx.stroke();
+
+                // Label "No" / ">"
+                const rightMidX = (node.x + node.right.x) / 2;
+                const rightMidY = (node.y + nodeHeight / 2 + node.right.y - nodeHeight / 2) / 2;
+                treeCtx.fillStyle = '#ff5a7a';
+                treeCtx.font = 'bold 10px system-ui';
+                treeCtx.fillText('No', rightMidX + 5, rightMidY);
+
+                drawConnections(node.left);
+                drawConnections(node.right);
+            }
+
+            // Draw nodes
+            function drawNodes(node) {
+                const x = node.x;
+                const y = node.y;
+
+                if (node.type === 'leaf') {
+                    // Draw leaf node (rounded rectangle)
+                    const className = ['A', 'B', 'C'][node.class];
+                    const color = COLORS['class' + node.class];
+
+                    treeCtx.fillStyle = color + '30'; // Add transparency
+                    treeCtx.strokeStyle = color;
+                    treeCtx.lineWidth = 2;
+
+                    // Rounded rectangle
+                    treeCtx.beginPath();
+                    const radius = 8;
+                    treeCtx.moveTo(x - nodeWidth/2 + radius, y - nodeHeight/2);
+                    treeCtx.lineTo(x + nodeWidth/2 - radius, y - nodeHeight/2);
+                    treeCtx.arcTo(x + nodeWidth/2, y - nodeHeight/2, x + nodeWidth/2, y - nodeHeight/2 + radius, radius);
+                    treeCtx.lineTo(x + nodeWidth/2, y + nodeHeight/2 - radius);
+                    treeCtx.arcTo(x + nodeWidth/2, y + nodeHeight/2, x + nodeWidth/2 - radius, y + nodeHeight/2, radius);
+                    treeCtx.lineTo(x - nodeWidth/2 + radius, y + nodeHeight/2);
+                    treeCtx.arcTo(x - nodeWidth/2, y + nodeHeight/2, x - nodeWidth/2, y + nodeHeight/2 - radius, radius);
+                    treeCtx.lineTo(x - nodeWidth/2, y - nodeHeight/2 + radius);
+                    treeCtx.arcTo(x - nodeWidth/2, y - nodeHeight/2, x - nodeWidth/2 + radius, y - nodeHeight/2, radius);
+                    treeCtx.closePath();
+                    treeCtx.fill();
+                    treeCtx.stroke();
+
+                    // Draw text
+                    treeCtx.fillStyle = color;
+                    treeCtx.font = 'bold 12px system-ui';
+                    treeCtx.textAlign = 'center';
+                    treeCtx.textBaseline = 'middle';
+                    treeCtx.fillText(`Class ${className}`, x, y - 6);
+
+                    treeCtx.font = '10px system-ui';
+                    treeCtx.fillStyle = 'rgba(168,179,204,0.9)';
+                    treeCtx.fillText(`n=${node.points}`, x, y + 8);
+                } else {
+                    // Draw decision node (rectangle)
+                    treeCtx.fillStyle = 'rgba(118,167,255,0.2)';
+                    treeCtx.strokeStyle = '#76a7ff';
+                    treeCtx.lineWidth = 2;
+
+                    // Rectangle
+                    treeCtx.fillRect(x - nodeWidth/2, y - nodeHeight/2, nodeWidth, nodeHeight);
+                    treeCtx.strokeRect(x - nodeWidth/2, y - nodeHeight/2, nodeWidth, nodeHeight);
+
+                    // Draw text
+                    const axisName = node.axis === 'x' ? 'F1' : 'F2';
+                    treeCtx.fillStyle = '#e7eefc';
+                    treeCtx.font = 'bold 11px system-ui';
+                    treeCtx.textAlign = 'center';
+                    treeCtx.textBaseline = 'middle';
+                    treeCtx.fillText(`${axisName} ≤ ${node.value.toFixed(2)}?`, x, y - 8);
+
+                    treeCtx.font = '9px system-ui';
+                    treeCtx.fillStyle = 'rgba(168,179,204,0.9)';
+                    treeCtx.fillText(`n=${node.points}`, x, y + 8);
+
+                    drawNodes(node.left);
+                    drawNodes(node.right);
+                }
+            }
+
+            // Calculate canvas height based on tree depth
+            const treeDepth = getTreeDepth(state.tree);
+            const requiredHeight = (treeDepth + 1) * levelHeight + 60;
+            treeCanvas.height = Math.max(400, requiredHeight);
+
+            calculateLayout(state.tree);
+            drawConnections(state.tree);
+            drawNodes(state.tree);
+        }
+
+        function clearAll() {
+            state.points = [];
+            state.hasTree = false;
+            state.tree = null;
+            state.splits = [];
+
+            document.getElementById('stats').style.display = 'none';
+            document.getElementById('treeViz').style.display = 'none';
+            document.getElementById('step-info').textContent = '🎯 Select a class and click on the chart to add data points';
+
+            draw();
+        }
+
+        function addSampleData() {
+            // Clear existing data first
+            state.points = [];
+
+            // Add sample Class A points (bottom-left)
+            for (let i = 0; i < 8; i++) {
+                const x = 1 + Math.random() * 3;
+                const y = 1 + Math.random() * 3;
+                state.points.push({ x, y, class: 0 });
+            }
+
+            // Add sample Class B points (top-right)
+            for (let i = 0; i < 8; i++) {
+                const x = 6 + Math.random() * 3;
+                const y = 6 + Math.random() * 3;
+                state.points.push({ x, y, class: 1 });
+            }
+
+            // Add sample Class C points (middle-bottom)
+            for (let i = 0; i < 8; i++) {
+                const x = 4 + Math.random() * 3;
+                const y = 1 + Math.random() * 2.5;
+                state.points.push({ x, y, class: 2 });
+            }
+
+            state.hasTree = false;
+            state.tree = null;
+            state.splits = [];
+            document.getElementById('treeViz').style.display = 'none';
+            draw();
+
+            document.getElementById('step-info').textContent = `Added sample data with ${state.points.length} points! Click "Build Decision Tree" to see how it splits.`;
+        }
+
+        // Event handlers
+        canvas.addEventListener('click', function(event) {
+            const rect = canvas.getBoundingClientRect();
+            const canvasX = event.clientX - rect.left;
+            const canvasY = event.clientY - rect.top;
+
+            // Check if click is within plot area
+            if (canvasX >= MARGINS.left && canvasX <= canvas.width - MARGINS.right &&
+                canvasY >= MARGINS.top && canvasY <= canvas.height - MARGINS.bottom) {
+
+                const dataPoint = canvasToData(canvasX, canvasY);
+                state.points.push({ x: dataPoint.x, y: dataPoint.y, class: state.selectedClass });
+
+                draw();
+
+                const counts = { 0: 0, 1: 0, 2: 0 };
+                state.points.forEach(p => counts[p.class]++);
+
+                if (state.points.length >= 3) {
+                    document.getElementById('step-info').textContent = `Added point! You now have ${state.points.length} points (A:${counts[0]}, B:${counts[1]}, C:${counts[2]}). Ready to build tree.`;
+                } else {
+                    document.getElementById('step-info').textContent = `Added point! Add at least ${3 - state.points.length} more point(s) to build a tree.`;
+                }
+            }
+        });
+
+        // Class selection
+        document.querySelectorAll('.class-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                // Update UI
+                document.querySelectorAll('.class-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+
+                // Update state
+                state.selectedClass = parseInt(btn.dataset.class);
+            });
+        });
+
+        // Depth slider
+        document.getElementById('depthSlider').addEventListener('input', function() {
+            document.getElementById('depthValue').textContent = this.value;
+        });
+
+        // View toggle functionality
+        const viewToggle = document.getElementById('viewToggle');
+        const playView = document.querySelector('#playView');
+        const howView = document.querySelector('#howView');
+
+        function setView(view) {
+            // Update toggle pills
+            [...viewToggle.querySelectorAll('.pill')].forEach(p => {
+                p.classList.toggle('active', p.dataset.view === view);
+            });
+
+            // Show/hide content
+            if (playView) playView.style.display = (view === 'play') ? 'block' : 'none';
+            if (howView) howView.style.display = (view === 'how') ? 'block' : 'none';
+        }
+
+        // Add click handler for view toggle
+        if (viewToggle) {
+            viewToggle.addEventListener('click', (e) => {
+                const pill = e.target.closest('.pill');
+                if (!pill) return;
+                setView(pill.dataset.view);
+            });
+        }
+
+        // Initialize
+        draw();
+    </script>
+</body>
+</html>

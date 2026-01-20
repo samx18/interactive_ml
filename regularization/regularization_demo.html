@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Understanding L1 & L2 Regularization - Interactive Demo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 15px;
+            color: #333;
+            overflow-x: hidden;
+        }
+
+        .container {
+            max-width: 1600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            height: calc(100vh - 30px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        h1 {
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            color: #666;
+            font-size: 1em;
+            margin-bottom: 10px;
+        }
+
+        .info-tabs {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+
+        .tab-button {
+            background: #f8f9ff;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 8px 20px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+        }
+
+        .tab-button:hover, .tab-button.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            border-left: 4px solid #667eea;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+
+        .tab-content p {
+            line-height: 1.6;
+            font-size: 0.95em;
+            margin-bottom: 8px;
+        }
+
+        .tab-content ul {
+            list-style: none;
+            padding: 0;
+        }
+
+        .tab-content li {
+            padding: 6px 0;
+            padding-left: 20px;
+            position: relative;
+            line-height: 1.5;
+            font-size: 0.95em;
+        }
+
+        .tab-content li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #667eea;
+            font-weight: bold;
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        .controls {
+            background: #f8f9ff;
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 15px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr) auto;
+            gap: 20px;
+            align-items: end;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .control-group label {
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #555;
+            font-size: 0.9em;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            height: 6px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.15);
+            background: #764ba2;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #667eea;
+            cursor: pointer;
+            border: none;
+        }
+
+        .value-display {
+            min-width: 40px;
+            text-align: center;
+            font-weight: 700;
+            color: #667eea;
+            font-size: 1em;
+        }
+
+        .visualization-grid {
+            flex: 1;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+            min-height: 0;
+        }
+
+        .viz-panel {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .viz-panel h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            text-align: center;
+            font-size: 1.1em;
+        }
+
+        .canvas-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 0;
+        }
+
+        canvas {
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+
+        .weights-section {
+            background: white;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            padding: 15px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .weights-section h3 {
+            color: #667eea;
+            margin-bottom: 12px;
+            font-size: 1.1em;
+            text-align: center;
+        }
+
+        #weights-container {
+            font-family: 'Courier New', monospace;
+            font-size: 0.85em;
+        }
+
+        .weight-bar {
+            display: flex;
+            align-items: center;
+            margin: 5px 0;
+        }
+
+        .weight-label {
+            width: 50px;
+            font-weight: 600;
+        }
+
+        .weight-value {
+            width: 60px;
+            text-align: right;
+            font-weight: 600;
+        }
+
+        button {
+            background: #667eea;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-size: 0.9em;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        button:hover {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .highlight {
+            background: #ffeb3b;
+            padding: 2px 4px;
+            border-radius: 3px;
+            font-weight: 600;
+        }
+
+        .comparison-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .comparison-panel {
+            background: #fff;
+            padding: 15px;
+            border-radius: 8px;
+            border: 2px solid #667eea;
+        }
+
+        .comparison-panel h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.1em;
+        }
+
+        @media (max-width: 1200px) {
+            .controls {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+
+            .visualization-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .comparison-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Understanding L1 & L2 Regularization</h1>
+            <p class="subtitle">An Interactive Visual Guide</p>
+
+            <div class="info-tabs">
+                <button class="tab-button" onclick="toggleTab('intro')">What is this?</button>
+                <button class="tab-button" onclick="toggleTab('differences')">Key Differences</button>
+                <button class="tab-button" onclick="toggleTab('when')">When to Use?</button>
+            </div>
+
+            <div id="tab-intro" class="tab-content">
+                <h2>What's This All About?</h2>
+                <p>
+                    Imagine you're trying to draw a line through some dots on a graph. You could draw a super wiggly line that touches every single dot perfectly, or you could draw a smooth, simple line that gets close to most dots.
+                </p>
+                <p>
+                    The wiggly line <span class="highlight">memorizes</span> the dots (this is called "overfitting"), but it won't work well for new dots you haven't seen yet. The smooth line <span class="highlight">learns the general pattern</span>, so it works better for new dots.
+                </p>
+                <p>
+                    <strong>Regularization</strong> is like a coach telling you: "Keep it simple! Don't get too fancy!" L1 and L2 are two different coaching styles.
+                </p>
+            </div>
+
+            <div id="tab-differences" class="tab-content">
+                <div class="comparison-grid">
+                    <div class="comparison-panel">
+                        <h3>L1 Regularization (Lasso)</h3>
+                        <ul>
+                            <li><strong>The Minimalist:</strong> Eliminates unnecessary features completely</li>
+                            <li><strong>Feature Selection:</strong> Automatically picks the most important features</li>
+                            <li><strong>Creates Sparsity:</strong> Many weights become exactly zero</li>
+                            <li><strong>Analogy:</strong> Like decluttering your house - throw away what you don't need</li>
+                        </ul>
+                    </div>
+
+                    <div class="comparison-panel">
+                        <h3>L2 Regularization (Ridge)</h3>
+                        <ul>
+                            <li><strong>The Democrat:</strong> Reduces the impact of all features equally</li>
+                            <li><strong>Smooth Solutions:</strong> Keeps all features but tones them down</li>
+                            <li><strong>Prevents Extremes:</strong> No single feature dominates</li>
+                            <li><strong>Analogy:</strong> Like turning down the volume on all instruments in a band</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <div id="tab-when" class="tab-content">
+                <h2>The Big Picture</h2>
+                <p>
+                    Both L1 and L2 regularization help prevent overfitting - that is, they stop your model from memorizing the training data and help it learn general patterns instead.
+                </p>
+                <p>
+                    <strong>Choose L1</strong> when you want automatic feature selection and a simpler, more interpretable model.
+                </p>
+                <p>
+                    <strong>Choose L2</strong> when you want to keep all features but prevent any from becoming too influential.
+                </p>
+                <p>
+                    <strong>Use both</strong> (called Elastic Net) when you want the benefits of both approaches!
+                </p>
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="controls">
+                <div class="control-group">
+                    <label>Model Complexity:</label>
+                    <div class="slider-container">
+                        <input type="range" id="complexity" min="1" max="20" value="10" step="1">
+                        <span class="value-display" id="complexity-value">10</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>L1 Strength (Remove):</label>
+                    <div class="slider-container">
+                        <input type="range" id="l1" min="0" max="100" value="0" step="1">
+                        <span class="value-display" id="l1-value">0</span>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>L2 Strength (Shrink):</label>
+                    <div class="slider-container">
+                        <input type="range" id="l2" min="0" max="100" value="0" step="1">
+                        <span class="value-display" id="l2-value">0</span>
+                    </div>
+                </div>
+
+                <button onclick="generateNewData()">New Data</button>
+            </div>
+
+            <div class="visualization-grid">
+                <div class="viz-panel">
+                    <h3>No Regularization</h3>
+                    <div class="canvas-container">
+                        <canvas id="canvas-none" width="400" height="280"></canvas>
+                    </div>
+                </div>
+
+                <div class="viz-panel">
+                    <h3>L1 Regularization (Lasso)</h3>
+                    <div class="canvas-container">
+                        <canvas id="canvas-l1" width="400" height="280"></canvas>
+                    </div>
+                </div>
+
+                <div class="viz-panel">
+                    <h3>L2 Regularization (Ridge)</h3>
+                    <div class="canvas-container">
+                        <canvas id="canvas-l2" width="400" height="280"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <div class="weights-section">
+                <h3>Feature Weights Comparison (Watch L1 set weights to 0, L2 shrink all)</h3>
+                <div id="weights-container"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab management
+        function toggleTab(tabName) {
+            const tabs = document.querySelectorAll('.tab-content');
+            const buttons = document.querySelectorAll('.tab-button');
+            const targetTab = document.getElementById(`tab-${tabName}`);
+
+            // If clicking the active tab, close it
+            if (targetTab.classList.contains('active')) {
+                targetTab.classList.remove('active');
+                buttons.forEach(btn => btn.classList.remove('active'));
+            } else {
+                // Close all tabs and open the clicked one
+                tabs.forEach(tab => tab.classList.remove('active'));
+                buttons.forEach(btn => btn.classList.remove('active'));
+                targetTab.classList.add('active');
+                event.target.classList.add('active');
+            }
+        }
+
+        // Generate random data points
+        let dataPoints = [];
+
+        function generateNewData() {
+            dataPoints = [];
+            for (let i = 0; i < 30; i++) {
+                const x = Math.random();
+                const y = Math.sin(x * Math.PI * 2) * 0.3 + 0.5 + (Math.random() - 0.5) * 0.2;
+                dataPoints.push({ x, y });
+            }
+            updateAll();
+        }
+
+        // Polynomial features
+        function getFeatures(x, degree) {
+            const features = [1]; // bias term
+            for (let i = 1; i <= degree; i++) {
+                features.push(Math.pow(x, i));
+            }
+            return features;
+        }
+
+        // Fit model with regularization
+        function fitModel(data, degree, l1Strength, l2Strength) {
+            const n = data.length;
+            const numFeatures = degree + 1;
+            let weights = new Array(numFeatures).fill(0);
+
+            // Simple gradient descent
+            const learningRate = 0.01;
+            const iterations = 1000;
+
+            for (let iter = 0; iter < iterations; iter++) {
+                const gradients = new Array(numFeatures).fill(0);
+
+                // Calculate gradients
+                for (let i = 0; i < n; i++) {
+                    const features = getFeatures(data[i].x, degree);
+                    let prediction = 0;
+                    for (let j = 0; j < numFeatures; j++) {
+                        prediction += weights[j] * features[j];
+                    }
+                    const error = prediction - data[i].y;
+
+                    for (let j = 0; j < numFeatures; j++) {
+                        gradients[j] += (2 / n) * error * features[j];
+                    }
+                }
+
+                // Update weights with regularization
+                for (let j = 0; j < numFeatures; j++) {
+                    // L2 regularization (Ridge)
+                    gradients[j] += l2Strength * weights[j];
+
+                    // L1 regularization (Lasso) - soft thresholding
+                    const l1Penalty = l1Strength * Math.sign(weights[j]);
+                    gradients[j] += l1Penalty;
+
+                    weights[j] -= learningRate * gradients[j];
+
+                    // Hard thresholding for L1 to encourage sparsity
+                    if (Math.abs(weights[j]) < l1Strength * 0.01) {
+                        weights[j] = 0;
+                    }
+                }
+            }
+
+            return weights;
+        }
+
+        // Predict using model
+        function predict(x, weights, degree) {
+            const features = getFeatures(x, degree);
+            let y = 0;
+            for (let i = 0; i < weights.length; i++) {
+                y += weights[i] * features[i];
+            }
+            return y;
+        }
+
+        // Draw on canvas
+        function drawVisualization(canvasId, weights, degree, title) {
+            const canvas = document.getElementById(canvasId);
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+
+            // Clear canvas
+            ctx.fillStyle = '#fafafa';
+            ctx.fillRect(0, 0, width, height);
+
+            // Draw grid
+            ctx.strokeStyle = '#e0e0e0';
+            ctx.lineWidth = 1;
+            for (let i = 0; i <= 10; i++) {
+                ctx.beginPath();
+                ctx.moveTo(0, i * height / 10);
+                ctx.lineTo(width, i * height / 10);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(i * width / 10, 0);
+                ctx.lineTo(i * width / 10, height);
+                ctx.stroke();
+            }
+
+            // Draw fitted curve
+            ctx.strokeStyle = '#667eea';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            for (let i = 0; i <= width; i++) {
+                const x = i / width;
+                const y = predict(x, weights, degree);
+                const canvasY = height - (y * height);
+
+                if (i === 0) {
+                    ctx.moveTo(i, canvasY);
+                } else {
+                    ctx.lineTo(i, canvasY);
+                }
+            }
+            ctx.stroke();
+
+            // Draw data points
+            ctx.fillStyle = '#ff5722';
+            for (const point of dataPoints) {
+                const canvasX = point.x * width;
+                const canvasY = height - (point.y * height);
+
+                ctx.beginPath();
+                ctx.arc(canvasX, canvasY, 5, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Draw outline
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 2;
+                ctx.stroke();
+            }
+        }
+
+        // Display weights
+        function displayWeights(weightsNone, weightsL1, weightsL2) {
+            const container = document.getElementById('weights-container');
+            let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">';
+
+            const types = [
+                { weights: weightsNone, label: 'No Regularization', color: '#ff5722' },
+                { weights: weightsL1, label: 'L1 (Lasso)', color: '#4caf50' },
+                { weights: weightsL2, label: 'L2 (Ridge)', color: '#2196f3' }
+            ];
+
+            for (const type of types) {
+                html += `<div><h4 style="color: ${type.color}; margin-bottom: 8px; font-size: 0.95em;">${type.label}</h4>`;
+                const maxWeight = Math.max(...type.weights.map(Math.abs));
+
+                for (let i = 0; i < Math.min(8, type.weights.length); i++) {
+                    const w = type.weights[i];
+                    const percentage = maxWeight > 0 ? Math.abs(w) / maxWeight * 100 : 0;
+                    html += `
+                        <div class="weight-bar">
+                            <div class="weight-label">w${i}:</div>
+                            <div style="flex: 1; background: #f0f0f0; height: 18px; border-radius: 4px; position: relative;">
+                                <div style="width: ${percentage}%; height: 100%; background: ${type.color}; border-radius: 4px;"></div>
+                            </div>
+                            <div class="weight-value">${w.toFixed(3)}</div>
+                        </div>
+                    `;
+                }
+                html += '</div>';
+            }
+
+            html += '</div>';
+            container.innerHTML = html;
+        }
+
+        // Update all visualizations
+        function updateAll() {
+            const complexity = parseInt(document.getElementById('complexity').value);
+            const l1 = parseFloat(document.getElementById('l1').value) / 1000;
+            const l2 = parseFloat(document.getElementById('l2').value) / 1000;
+
+            // Fit models
+            const weightsNone = fitModel(dataPoints, complexity, 0, 0);
+            const weightsL1 = fitModel(dataPoints, complexity, l1, 0);
+            const weightsL2 = fitModel(dataPoints, complexity, 0, l2);
+
+            // Draw visualizations
+            drawVisualization('canvas-none', weightsNone, complexity);
+            drawVisualization('canvas-l1', weightsL1, complexity);
+            drawVisualization('canvas-l2', weightsL2, complexity);
+
+            // Display weights
+            displayWeights(weightsNone, weightsL1, weightsL2);
+        }
+
+        // Event listeners
+        document.getElementById('complexity').addEventListener('input', function() {
+            document.getElementById('complexity-value').textContent = this.value;
+            updateAll();
+        });
+
+        document.getElementById('l1').addEventListener('input', function() {
+            document.getElementById('l1-value').textContent = this.value;
+            updateAll();
+        });
+
+        document.getElementById('l2').addEventListener('input', function() {
+            document.getElementById('l2-value').textContent = this.value;
+            updateAll();
+        });
+
+        // Initialize
+        generateNewData();
+    </script>
+</body>
+</html>
