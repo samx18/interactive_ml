@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Understanding L1 & L2 Regularization - Interactive Demo</title>
     <style>
+        :root{
+            --bg:#0b1220;
+            --panel:#101a2f;
+            --text:#e7eefc;
+            --muted:#a8b3cc;
+            --accent:#76a7ff;
+            --red:#ff5a7a;
+            --blue:#4cc9ff;
+            --yellow:#ffd166;
+            --good:#2dd4bf;
+        }
         * {
             margin: 0;
             padding: 0;
@@ -12,21 +23,22 @@
         }
 
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+            background: radial-gradient(1200px 600px at 15% 20%, #142246 0%, var(--bg) 60%);
             min-height: 100vh;
             padding: 15px;
-            color: #333;
+            color: var(--text);
             overflow-x: hidden;
         }
 
         .container {
             max-width: 1600px;
             margin: 0 auto;
-            background: white;
-            border-radius: 16px;
+            background: linear-gradient(180deg, rgba(16,26,47,0.95), rgba(16,26,47,0.75));
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 14px;
             padding: 25px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            box-shadow: 0 18px 50px rgba(0,0,0,0.35);
             height: calc(100vh - 30px);
             display: flex;
             flex-direction: column;
@@ -38,15 +50,18 @@
         }
 
         h1 {
-            color: #667eea;
+            color: var(--text);
             margin-bottom: 5px;
             font-size: 2em;
+            font-weight: 800;
+            letter-spacing: 0.2px;
         }
 
         .subtitle {
-            color: #666;
+            color: var(--muted);
             font-size: 1em;
             margin-bottom: 10px;
+            line-height: 1.35;
         }
 
         .info-tabs {
@@ -57,29 +72,35 @@
         }
 
         .tab-button {
-            background: #f8f9ff;
-            color: #667eea;
-            border: 2px solid #667eea;
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.12);
             padding: 8px 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 0.9em;
             cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
+            transition: all 0.2s ease;
+            font-weight: 700;
         }
 
-        .tab-button:hover, .tab-button.active {
-            background: #667eea;
-            color: white;
+        .tab-button:hover {
+            background: rgba(255,255,255,0.10);
+        }
+
+        .tab-button.active {
+            background: linear-gradient(180deg, rgba(118,167,255,0.35), rgba(118,167,255,0.15));
+            border-color: rgba(118,167,255,0.45);
+            color: var(--text);
         }
 
         .tab-content {
             display: none;
-            background: #f8f9ff;
+            background: rgba(0,0,0,0.18);
+            border: 1px solid rgba(255,255,255,0.10);
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 15px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid var(--accent);
             max-height: 200px;
             overflow-y: auto;
         }
@@ -89,15 +110,17 @@
         }
 
         .tab-content h2 {
-            color: #667eea;
+            color: var(--text);
             margin-bottom: 10px;
             font-size: 1.2em;
+            font-weight: 900;
         }
 
         .tab-content p {
             line-height: 1.6;
             font-size: 0.95em;
             margin-bottom: 8px;
+            color: var(--muted);
         }
 
         .tab-content ul {
@@ -111,13 +134,14 @@
             position: relative;
             line-height: 1.5;
             font-size: 0.95em;
+            color: var(--muted);
         }
 
         .tab-content li:before {
             content: "✓";
             position: absolute;
             left: 0;
-            color: #667eea;
+            color: var(--accent);
             font-weight: bold;
         }
 
@@ -129,7 +153,8 @@
         }
 
         .controls {
-            background: #f8f9ff;
+            background: linear-gradient(180deg, rgba(16,26,47,0.95), rgba(16,26,47,0.75));
+            border: 1px solid rgba(255,255,255,0.07);
             padding: 15px;
             border-radius: 12px;
             margin-bottom: 15px;
@@ -147,7 +172,7 @@
         .control-group label {
             font-weight: 600;
             margin-bottom: 8px;
-            color: #555;
+            color: var(--muted);
             font-size: 0.9em;
         }
 
@@ -161,7 +186,7 @@
             flex: 1;
             height: 6px;
             border-radius: 5px;
-            background: #ddd;
+            background: rgba(255,255,255,0.1);
             outline: none;
             -webkit-appearance: none;
         }
@@ -172,21 +197,21 @@
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #667eea;
+            background: var(--accent);
             cursor: pointer;
             transition: all 0.2s;
         }
 
         input[type="range"]::-webkit-slider-thumb:hover {
             transform: scale(1.15);
-            background: #764ba2;
+            background: var(--blue);
         }
 
         input[type="range"]::-moz-range-thumb {
             width: 20px;
             height: 20px;
             border-radius: 50%;
-            background: #667eea;
+            background: var(--accent);
             cursor: pointer;
             border: none;
         }
@@ -195,7 +220,7 @@
             min-width: 40px;
             text-align: center;
             font-weight: 700;
-            color: #667eea;
+            color: var(--accent);
             font-size: 1em;
         }
 
@@ -209,21 +234,22 @@
         }
 
         .viz-panel {
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: linear-gradient(180deg, rgba(16,26,47,0.95), rgba(16,26,47,0.75));
+            border: 1px solid rgba(255,255,255,0.07);
             border-radius: 12px;
             padding: 12px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 18px 50px rgba(0,0,0,0.35);
             display: flex;
             flex-direction: column;
             min-height: 0;
         }
 
         .viz-panel h3 {
-            color: #667eea;
+            color: var(--text);
             margin-bottom: 10px;
             text-align: center;
             font-size: 1.1em;
+            font-weight: 900;
         }
 
         .canvas-container {
@@ -239,26 +265,27 @@
             max-width: 100%;
             max-height: 100%;
             border-radius: 8px;
-            background: #fafafa;
+            background: rgba(0,0,0,0.18);
         }
 
         .weights-section {
-            background: white;
-            border: 2px solid #e0e0e0;
+            background: linear-gradient(180deg, rgba(16,26,47,0.95), rgba(16,26,47,0.75));
+            border: 1px solid rgba(255,255,255,0.07);
             border-radius: 12px;
             padding: 15px;
-            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            box-shadow: 0 18px 50px rgba(0,0,0,0.35);
         }
 
         .weights-section h3 {
-            color: #667eea;
+            color: var(--text);
             margin-bottom: 12px;
             font-size: 1.1em;
             text-align: center;
+            font-weight: 900;
         }
 
         #weights-container {
-            font-family: 'Courier New', monospace;
+            font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
             font-size: 0.85em;
         }
 
@@ -271,35 +298,40 @@
         .weight-label {
             width: 50px;
             font-weight: 600;
+            color: var(--muted);
         }
 
         .weight-value {
             width: 60px;
             text-align: right;
             font-weight: 600;
+            color: var(--text);
         }
 
         button {
-            background: #667eea;
-            color: white;
-            border: none;
+            background: rgba(255,255,255,0.06);
+            color: var(--text);
+            border: 1px solid rgba(255,255,255,0.12);
             padding: 10px 20px;
-            border-radius: 8px;
+            border-radius: 12px;
             font-size: 0.9em;
             cursor: pointer;
-            transition: all 0.3s;
-            font-weight: 600;
+            transition: all 0.04s ease;
+            font-weight: 700;
             white-space: nowrap;
         }
 
         button:hover {
-            background: #764ba2;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.10);
+        }
+
+        button:active {
+            transform: translateY(1px);
         }
 
         .highlight {
-            background: #ffeb3b;
+            background: rgba(255,209,102,0.3);
+            color: var(--yellow);
             padding: 2px 4px;
             border-radius: 3px;
             font-weight: 600;
@@ -312,16 +344,25 @@
         }
 
         .comparison-panel {
-            background: #fff;
+            background: rgba(0,0,0,0.18);
+            border: 1px solid rgba(255,255,255,0.10);
             padding: 15px;
-            border-radius: 8px;
-            border: 2px solid #667eea;
+            border-radius: 12px;
         }
 
         .comparison-panel h3 {
-            color: #667eea;
+            color: var(--text);
             margin-bottom: 10px;
             font-size: 1.1em;
+            font-weight: 900;
+        }
+
+        .comparison-panel ul {
+            color: var(--muted);
+        }
+
+        .comparison-panel strong {
+            color: var(--text);
         }
 
         @media (max-width: 1200px) {
@@ -573,11 +614,11 @@
             const height = canvas.height;
 
             // Clear canvas
-            ctx.fillStyle = '#fafafa';
+            ctx.fillStyle = 'rgba(0,0,0,0.18)';
             ctx.fillRect(0, 0, width, height);
 
             // Draw grid
-            ctx.strokeStyle = '#e0e0e0';
+            ctx.strokeStyle = 'rgba(255,255,255,0.07)';
             ctx.lineWidth = 1;
             for (let i = 0; i <= 10; i++) {
                 ctx.beginPath();
@@ -592,7 +633,7 @@
             }
 
             // Draw fitted curve
-            ctx.strokeStyle = '#667eea';
+            ctx.strokeStyle = '#76a7ff';
             ctx.lineWidth = 3;
             ctx.beginPath();
             for (let i = 0; i <= width; i++) {
@@ -609,7 +650,7 @@
             ctx.stroke();
 
             // Draw data points
-            ctx.fillStyle = '#ff5722';
+            ctx.fillStyle = '#ff5a7a';
             for (const point of dataPoints) {
                 const canvasX = point.x * width;
                 const canvasY = height - (point.y * height);
@@ -619,7 +660,7 @@
                 ctx.fill();
 
                 // Draw outline
-                ctx.strokeStyle = '#fff';
+                ctx.strokeStyle = 'rgba(0,0,0,0.55)';
                 ctx.lineWidth = 2;
                 ctx.stroke();
             }
@@ -631,13 +672,13 @@
             let html = '<div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">';
 
             const types = [
-                { weights: weightsNone, label: 'No Regularization', color: '#ff5722' },
-                { weights: weightsL1, label: 'L1 (Lasso)', color: '#4caf50' },
-                { weights: weightsL2, label: 'L2 (Ridge)', color: '#2196f3' }
+                { weights: weightsNone, label: 'No Regularization', color: '#ff5a7a' },
+                { weights: weightsL1, label: 'L1 (Lasso)', color: '#2dd4bf' },
+                { weights: weightsL2, label: 'L2 (Ridge)', color: '#4cc9ff' }
             ];
 
             for (const type of types) {
-                html += `<div><h4 style="color: ${type.color}; margin-bottom: 8px; font-size: 0.95em;">${type.label}</h4>`;
+                html += `<div><h4 style="color: ${type.color}; margin-bottom: 8px; font-size: 0.95em; font-weight: 900;">${type.label}</h4>`;
                 const maxWeight = Math.max(...type.weights.map(Math.abs));
 
                 for (let i = 0; i < Math.min(8, type.weights.length); i++) {
@@ -646,7 +687,7 @@
                     html += `
                         <div class="weight-bar">
                             <div class="weight-label">w${i}:</div>
-                            <div style="flex: 1; background: #f0f0f0; height: 18px; border-radius: 4px; position: relative;">
+                            <div style="flex: 1; background: rgba(255,255,255,0.05); height: 18px; border-radius: 4px; position: relative;">
                                 <div style="width: ${percentage}%; height: 100%; background: ${type.color}; border-radius: 4px;"></div>
                             </div>
                             <div class="weight-value">${w.toFixed(3)}</div>
